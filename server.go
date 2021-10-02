@@ -7,13 +7,23 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/kelompok-1-tgtc/tgtc-user-coupon/configs/database"
 	"github.com/kelompok-1-tgtc/tgtc-user-coupon/graph"
 	"github.com/kelompok-1-tgtc/tgtc-user-coupon/graph/generated"
+	"github.com/kelompok-1-tgtc/tgtc-user-coupon/internal/models"
 )
 
 const defaultPort = "8080"
 
 func main() {
+	err := database.ConnectDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	database.DB.AutoMigrate(&models.User{})
+	database.DB.AutoMigrate(&models.Coupon{})
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort

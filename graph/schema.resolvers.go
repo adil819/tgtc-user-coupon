@@ -5,18 +5,31 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/kelompok-1-tgtc/tgtc-user-coupon/graph/generated"
 	"github.com/kelompok-1-tgtc/tgtc-user-coupon/graph/model"
+	"github.com/kelompok-1-tgtc/tgtc-user-coupon/internal/handlers"
+	"github.com/kelompok-1-tgtc/tgtc-user-coupon/internal/models"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) CreateCoupon(ctx context.Context, newCoupon model.NewCoupon) (*models.Coupon, error) {
+	return handlers.CreateCouponHandler(ctx, newCoupon)
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) UpdateCoupon(ctx context.Context, id string) (*models.Coupon, error) {
+	return handlers.UpdateCouponHandler(ctx, id)
+}
+
+func (r *mutationResolver) DeleteCoupon(ctx context.Context, id string) (bool, error) {
+	return handlers.DeleteCouponHandler(ctx, id)
+}
+
+func (r *mutationResolver) CreateUser(ctx context.Context, newUser *model.NewUser) (*models.User, error) {
+	return handlers.CreateUserHandler(ctx, newUser)
+}
+
+func (r *queryResolver) ReadAllCoupons(ctx context.Context, userID string) ([]*models.Coupon, error) {
+	return handlers.ReadAllCouponsHandler(ctx, userID)
 }
 
 // Mutation returns generated.MutationResolver implementation.

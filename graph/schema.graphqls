@@ -2,27 +2,61 @@
 #
 # https://gqlgen.com/getting-started/
 
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
-}
+scalar Time
 
 type User {
   id: ID!
   name: String!
+  memberType: String!
+  createdAt: Time!
+  updatedAt: Time
+}
+
+type Coupon {
+  id: ID!
+  title: String!
+  couponType: String!
+  category: String!
+  discount: Int!
+  maxDiscountAmount: Int!
+  minTransactionAmount: Int!
+  paymentMethod: String!
+  memberType: String!
+  imageUrl: String!
+  description: String!
+  createdAt: Time!
+  updatedAt: Time
 }
 
 type Query {
-  todos: [Todo!]!
+  readAllCoupons(userId: ID!): [Coupon!]!
 }
 
-input NewTodo {
-  text: String!
-  userId: String!
+input NewCoupon {
+  title: String!
+  couponType: String!
+  category: String!
+  discount: Int!
+  maxDiscountAmount: Int!
+  minTransactionAmount: Int!
+  paymentMethod: String!
+  memberType: String!
+  imageUrl: String!
+  description: String!
+}
+
+input NewUser {
+  name: String!
+  memberType: String!
+  coupons: [NewCoupon!]!
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  # Coupon
+  createCoupon(newCoupon: NewCoupon!): Coupon!
+  updateCoupon(id: ID!): Coupon!
+  deleteCoupon(id: ID!): Boolean!
+
+  # User
+  createUser(newUser: NewUser): User!
 }

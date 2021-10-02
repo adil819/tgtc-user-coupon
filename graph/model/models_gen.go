@@ -2,19 +2,21 @@
 
 package model
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type NewCoupon struct {
+	Title                string `json:"title"`
+	CouponType           string `json:"couponType"`
+	Category             string `json:"category"`
+	Discount             int64  `json:"discount"`
+	MaxDiscountAmount    int64  `json:"maxDiscountAmount"`
+	MinTransactionAmount int64  `json:"minTransactionAmount"`
+	PaymentMethod        string `json:"paymentMethod"`
+	MemberType           string `json:"memberType"`
+	ImageURL             string `json:"imageUrl"`
+	Description          string `json:"description"`
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
-}
-
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type NewUser struct {
+	Name       string       `json:"name"`
+	MemberType string       `json:"memberType"`
+	Coupons    []*NewCoupon `json:"coupons"`
 }
