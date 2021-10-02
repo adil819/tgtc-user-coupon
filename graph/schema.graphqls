@@ -58,7 +58,7 @@ input NewUser {
 type Mutation {
   # Coupon
   createCoupon(newCoupon: NewCoupon!): Coupon!
-  updateCoupon(id: ID!): Coupon!
+  updateCoupon(id: ID!, newCoupon: NewCoupon!): Coupon!
   deleteCoupon(id: ID!): Boolean!
 
   # User

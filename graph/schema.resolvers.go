@@ -25,8 +25,8 @@ func (r *mutationResolver) CreateCoupon(ctx context.Context, newCoupon model.New
 	return handlers.CreateCouponHandler(ctx, newCoupon)
 }
 
-func (r *mutationResolver) UpdateCoupon(ctx context.Context, id string) (*models.Coupon, error) {
-	return handlers.UpdateCouponHandler(ctx, id)
+func (r *mutationResolver) UpdateCoupon(ctx context.Context, id string, newCoupon model.NewCoupon) (*models.Coupon, error) {
+	return handlers.UpdateCouponHandler(ctx, id, newCoupon)
 }
 
 func (r *mutationResolver) DeleteCoupon(ctx context.Context, id string) (bool, error) {

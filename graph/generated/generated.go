@@ -68,7 +68,7 @@ type ComplexityRoot struct {
 		CreateCoupon func(childComplexity int, newCoupon model.NewCoupon) int
 		CreateUser   func(childComplexity int, newUser *model.NewUser) int
 		DeleteCoupon func(childComplexity int, id string) int
-		UpdateCoupon func(childComplexity int, id string) int
+		UpdateCoupon func(childComplexity int, id string, newCoupon model.NewCoupon) int
 	}
 
 	Query struct {
@@ -90,7 +90,7 @@ type CouponResolver interface {
 }
 type MutationResolver interface {
 	CreateCoupon(ctx context.Context, newCoupon model.NewCoupon) (*models.Coupon, error)
-	UpdateCoupon(ctx context.Context, id string) (*models.Coupon, error)
+	UpdateCoupon(ctx context.Context, id string, newCoupon model.NewCoupon) (*models.Coupon, error)
 	DeleteCoupon(ctx context.Context, id string) (bool, error)
 	CreateUser(ctx context.Context, newUser *model.NewUser) (*models.User, error)
 }
@@ -264,7 +264,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateCoupon(childComplexity, args["id"].(string)), true
+		return e.complexity.Mutation.UpdateCoupon(childComplexity, args["id"].(string), args["newCoupon"].(model.NewCoupon)), true
 
 	case "Query.MyCoupons":
 		if e.complexity.Query.MyCoupons == nil {
@@ -437,7 +437,7 @@ input NewUser {
 type Mutation {
   # Coupon
   createCoupon(newCoupon: NewCoupon!): Coupon!
-  updateCoupon(id: ID!): Coupon!
+  updateCoupon(id: ID!, newCoupon: NewCoupon!): Coupon!
   deleteCoupon(id: ID!): Boolean!
 
   # User
@@ -508,6 +508,15 @@ func (ec *executionContext) field_Mutation_updateCoupon_args(ctx context.Context
 		}
 	}
 	args["id"] = arg0
+	var arg1 model.NewCoupon
+	if tmp, ok := rawArgs["newCoupon"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newCoupon"))
+		arg1, err = ec.unmarshalNNewCoupon2githubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐNewCoupon(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["newCoupon"] = arg1
 	return args, nil
 }
 
@@ -1177,7 +1186,7 @@ func (ec *executionContext) _Mutation_updateCoupon(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateCoupon(rctx, args["id"].(string))
+		return ec.resolvers.Mutation().UpdateCoupon(rctx, args["id"].(string), args["newCoupon"].(model.NewCoupon))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
