@@ -37,6 +37,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Coupon() CouponResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 }
@@ -46,11 +47,13 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Coupon struct {
+		BeginDate            func(childComplexity int) int
 		Category             func(childComplexity int) int
 		CouponType           func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
 		Description          func(childComplexity int) int
 		Discount             func(childComplexity int) int
+		ExpiredDate          func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		ImageURL             func(childComplexity int) int
 		MaxDiscountAmount    func(childComplexity int) int
@@ -69,7 +72,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		ReadAllCoupons func(childComplexity int, userID string) int
+		MyCoupons func(childComplexity int, title string, memberType string) int
 	}
 
 	User struct {
@@ -81,6 +84,10 @@ type ComplexityRoot struct {
 	}
 }
 
+type CouponResolver interface {
+	BeginDate(ctx context.Context, obj *models.Coupon) (string, error)
+	ExpiredDate(ctx context.Context, obj *models.Coupon) (string, error)
+}
 type MutationResolver interface {
 	CreateCoupon(ctx context.Context, newCoupon model.NewCoupon) (*models.Coupon, error)
 	UpdateCoupon(ctx context.Context, id string) (*models.Coupon, error)
@@ -88,7 +95,7 @@ type MutationResolver interface {
 	CreateUser(ctx context.Context, newUser *model.NewUser) (*models.User, error)
 }
 type QueryResolver interface {
-	ReadAllCoupons(ctx context.Context, userID string) ([]*models.Coupon, error)
+	MyCoupons(ctx context.Context, title string, memberType string) ([]*models.Coupon, error)
 }
 
 type executableSchema struct {
@@ -105,6 +112,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Coupon.beginDate":
+		if e.complexity.Coupon.BeginDate == nil {
+			break
+		}
+
+		return e.complexity.Coupon.BeginDate(childComplexity), true
 
 	case "Coupon.category":
 		if e.complexity.Coupon.Category == nil {
@@ -140,6 +154,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Coupon.Discount(childComplexity), true
+
+	case "Coupon.expiredDate":
+		if e.complexity.Coupon.ExpiredDate == nil {
+			break
+		}
+
+		return e.complexity.Coupon.ExpiredDate(childComplexity), true
 
 	case "Coupon.id":
 		if e.complexity.Coupon.ID == nil {
@@ -245,17 +266,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateCoupon(childComplexity, args["id"].(string)), true
 
-	case "Query.readAllCoupons":
-		if e.complexity.Query.ReadAllCoupons == nil {
+	case "Query.MyCoupons":
+		if e.complexity.Query.MyCoupons == nil {
 			break
 		}
 
-		args, err := ec.field_Query_readAllCoupons_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_MyCoupons_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.ReadAllCoupons(childComplexity, args["userId"].(string)), true
+		return e.complexity.Query.MyCoupons(childComplexity, args["title"].(string), args["memberType"].(string)), true
 
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
@@ -374,6 +395,8 @@ type Coupon {
   id: ID!
   title: String!
   couponType: String!
+  beginDate: String!
+  expiredDate: String!
   category: String!
   discount: Int!
   maxDiscountAmount: Int!
@@ -387,12 +410,14 @@ type Coupon {
 }
 
 type Query {
-  readAllCoupons(userId: ID!): [Coupon!]!
+  MyCoupons(title: String!, memberType: String!): [Coupon!]!
 }
 
 input NewCoupon {
   title: String!
   couponType: String!
+  beginDate: String!
+  expiredDate: String!
   category: String!
   discount: Int!
   maxDiscountAmount: Int!
@@ -486,6 +511,30 @@ func (ec *executionContext) field_Mutation_updateCoupon_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_MyCoupons_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["title"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["title"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["memberType"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("memberType"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["memberType"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -498,21 +547,6 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_readAllCoupons_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["userId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userId"] = arg0
 	return args, nil
 }
 
@@ -643,6 +677,76 @@ func (ec *executionContext) _Coupon_couponType(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.CouponType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Coupon_beginDate(ctx context.Context, field graphql.CollectedField, obj *models.Coupon) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Coupon",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Coupon().BeginDate(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Coupon_expiredDate(ctx context.Context, field graphql.CollectedField, obj *models.Coupon) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Coupon",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Coupon().ExpiredDate(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1174,7 +1278,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	return ec.marshalNUser2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋinternalᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_readAllCoupons(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_MyCoupons(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1191,7 +1295,7 @@ func (ec *executionContext) _Query_readAllCoupons(ctx context.Context, field gra
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_readAllCoupons_args(ctx, rawArgs)
+	args, err := ec.field_Query_MyCoupons_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1199,7 +1303,7 @@ func (ec *executionContext) _Query_readAllCoupons(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().ReadAllCoupons(rctx, args["userId"].(string))
+		return ec.resolvers.Query().MyCoupons(rctx, args["title"].(string), args["memberType"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2606,6 +2710,22 @@ func (ec *executionContext) unmarshalInputNewCoupon(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "beginDate":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("beginDate"))
+			it.BeginDate, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "expiredDate":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiredDate"))
+			it.ExpiredDate, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "category":
 			var err error
 
@@ -2737,62 +2857,90 @@ func (ec *executionContext) _Coupon(ctx context.Context, sel ast.SelectionSet, o
 		case "id":
 			out.Values[i] = ec._Coupon_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._Coupon_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "couponType":
 			out.Values[i] = ec._Coupon_couponType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		case "beginDate":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Coupon_beginDate(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "expiredDate":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Coupon_expiredDate(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "category":
 			out.Values[i] = ec._Coupon_category(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "discount":
 			out.Values[i] = ec._Coupon_discount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "maxDiscountAmount":
 			out.Values[i] = ec._Coupon_maxDiscountAmount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "minTransactionAmount":
 			out.Values[i] = ec._Coupon_minTransactionAmount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "paymentMethod":
 			out.Values[i] = ec._Coupon_paymentMethod(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "memberType":
 			out.Values[i] = ec._Coupon_memberType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "imageUrl":
 			out.Values[i] = ec._Coupon_imageUrl(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._Coupon_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "createdAt":
 			out.Values[i] = ec._Coupon_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Coupon_updatedAt(ctx, field, obj)
@@ -2868,7 +3016,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "readAllCoupons":
+		case "MyCoupons":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -2876,7 +3024,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_readAllCoupons(ctx, field)
+				res = ec._Query_MyCoupons(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

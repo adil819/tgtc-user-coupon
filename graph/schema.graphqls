@@ -16,6 +16,8 @@ type Coupon {
   id: ID!
   title: String!
   couponType: String!
+  beginDate: String!
+  expiredDate: String!
   category: String!
   discount: Int!
   maxDiscountAmount: Int!
@@ -29,12 +31,14 @@ type Coupon {
 }
 
 type Query {
-  readAllCoupons(userId: ID!): [Coupon!]!
+  MyCoupons(title: String!, memberType: String!): [Coupon!]!
 }
 
 input NewCoupon {
   title: String!
   couponType: String!
+  beginDate: String!
+  expiredDate: String!
   category: String!
   discount: Int!
   maxDiscountAmount: Int!

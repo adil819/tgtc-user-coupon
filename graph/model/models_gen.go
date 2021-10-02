@@ -5,6 +5,8 @@ package model
 type NewCoupon struct {
 	Title                string `json:"title"`
 	CouponType           string `json:"couponType"`
+	BeginDate            string `json:"beginDate"`
+	ExpiredDate          string `json:"expiredDate"`
 	Category             string `json:"category"`
 	Discount             int64  `json:"discount"`
 	MaxDiscountAmount    int64  `json:"maxDiscountAmount"`

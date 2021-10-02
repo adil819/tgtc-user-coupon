@@ -11,15 +11,27 @@ import (
 
 func CreateUserHandler(ctx context.Context, newUser *model.NewUser) (*models.User, error) {
 	// userCoupon := []*model.NewCoupon{}
-
-	// userCoupon := []model.Coupon{
-
-	// }
+	a := models.Coupon{
+		ID:                   "123",
+		Title:                "Hehe",
+		CouponType:           "Hehe",
+		Category:             "Hehe",
+		Discount:             25,
+		MaxDiscountAmount:    25000,
+		MinTransactionAmount: 500000,
+		PaymentMethod:        "VA BCA",
+		MemberType:           "User",
+		ImageURL:             "www.google.com",
+		Description:          "Hehe",
+	}
+	userCoupon := []models.Coupon{a}
 
 	user := models.User{
+		ID:         "hehe",
 		Name:       newUser.Name,
 		MemberType: newUser.MemberType,
 		// Coupons:    userCoupon,
+		Coupons:   userCoupon,
 		CreatedAt: time.Now(),
 	}
 
