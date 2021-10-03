@@ -37,8 +37,12 @@ func (r *mutationResolver) CreateUser(ctx context.Context, newUser *model.NewUse
 	return handlers.CreateUserHandler(ctx, newUser)
 }
 
-func (r *queryResolver) MyCoupons(ctx context.Context, title string, memberType string) ([]*models.Coupon, error) {
-	return handlers.MyCouponsHandler(ctx, title, memberType)
+func (r *queryResolver) MyCoupons(ctx context.Context, title string, userID string) ([]*models.Coupon, error) {
+	return handlers.MyCouponsHandler(ctx, title, userID)
+}
+
+func (r *queryResolver) GetPaginationCoupons(ctx context.Context, input model.Pagination) (*model.PaginationResultCoupon, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Coupon returns generated.CouponResolver implementation.
@@ -53,3 +57,13 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 type couponResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) GetPaginationCoupon(ctx context.Context, input model.Pagination) (*model.PaginationResultCoupon, error) {
+	panic(fmt.Errorf("not implemented"))
+}

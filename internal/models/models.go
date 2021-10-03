@@ -29,7 +29,7 @@ type User struct {
 	ID         string
 	Name       string
 	MemberType string
-	Coupons    []Coupon `gorm:"many2many:user_coupons;"`
+	Coupons    []Coupon `gorm:"many2many:user_has_coupons;"`
 	CreatedAt  time.Time
 	UpdatedAt  *time.Time
 }

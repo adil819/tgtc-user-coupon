@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/kelompok-1-tgtc/tgtc-user-coupon/configs/database"
@@ -10,29 +12,40 @@ import (
 )
 
 func CreateUserHandler(ctx context.Context, newUser *model.NewUser) (*models.User, error) {
-	// userCoupon := []*model.NewCoupon{}
-	a := models.Coupon{
-		ID:                   "123",
-		Title:                "Hehe",
-		CouponType:           "Hehe",
-		Category:             "Hehe",
-		Discount:             25,
-		MaxDiscountAmount:    25000,
-		MinTransactionAmount: 500000,
-		PaymentMethod:        "VA BCA",
-		MemberType:           "User",
-		ImageURL:             "www.google.com",
-		Description:          "Hehe",
+	var userCoupon []models.Coupon
+
+	for _, v := range newUser.Coupons {
+		id := fmt.Sprintf("TKP-%d", rand.Intn(1000))
+
+		parsedBeginDate, _ := time.Parse(layoutISO, v.BeginDate)
+		parsedExpiredDate, _ := time.Parse(layoutISO, v.ExpiredDate)
+
+		tempCoupon := models.Coupon{
+			ID:                   id,
+			Title:                v.Title,
+			CouponType:           v.CouponType,
+			BeginDate:            parsedBeginDate,
+			ExpiredDate:          parsedExpiredDate,
+			Category:             v.Category,
+			Discount:             v.Discount,
+			MaxDiscountAmount:    v.MaxDiscountAmount,
+			MinTransactionAmount: v.MinTransactionAmount,
+			PaymentMethod:        v.PaymentMethod,
+			MemberType:           v.MemberType,
+			ImageURL:             v.ImageURL,
+			Description:          v.Description,
+		}
+		userCoupon = append(userCoupon, tempCoupon)
 	}
-	userCoupon := []models.Coupon{a}
+
+	id := fmt.Sprintf("USR-%d", rand.Intn(1000))
 
 	user := models.User{
-		ID:         "hehe",
+		ID:         id,
 		Name:       newUser.Name,
 		MemberType: newUser.MemberType,
-		// Coupons:    userCoupon,
-		Coupons:   userCoupon,
-		CreatedAt: time.Now(),
+		Coupons:    userCoupon,
+		CreatedAt:  time.Now(),
 	}
 
 	res := database.DB.Create(&user)

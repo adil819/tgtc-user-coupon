@@ -71,8 +71,25 @@ type ComplexityRoot struct {
 		UpdateCoupon func(childComplexity int, id string, newCoupon model.NewCoupon) int
 	}
 
+	PaginationEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	PaginationInfo struct {
+		EndCursor   func(childComplexity int) int
+		HasNextPage func(childComplexity int) int
+	}
+
+	PaginationResultCoupon struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
 	Query struct {
-		MyCoupons func(childComplexity int, title string, memberType string) int
+		GetPaginationCoupons func(childComplexity int, input model.Pagination) int
+		MyCoupons            func(childComplexity int, title string, userID string) int
 	}
 
 	User struct {
@@ -95,7 +112,8 @@ type MutationResolver interface {
 	CreateUser(ctx context.Context, newUser *model.NewUser) (*models.User, error)
 }
 type QueryResolver interface {
-	MyCoupons(ctx context.Context, title string, memberType string) ([]*models.Coupon, error)
+	MyCoupons(ctx context.Context, title string, userID string) ([]*models.Coupon, error)
+	GetPaginationCoupons(ctx context.Context, input model.Pagination) (*model.PaginationResultCoupon, error)
 }
 
 type executableSchema struct {
@@ -266,17 +284,78 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateCoupon(childComplexity, args["id"].(string), args["newCoupon"].(model.NewCoupon)), true
 
-	case "Query.MyCoupons":
-		if e.complexity.Query.MyCoupons == nil {
+	case "PaginationEdge.cursor":
+		if e.complexity.PaginationEdge.Cursor == nil {
 			break
 		}
 
-		args, err := ec.field_Query_MyCoupons_args(context.TODO(), rawArgs)
+		return e.complexity.PaginationEdge.Cursor(childComplexity), true
+
+	case "PaginationEdge.node":
+		if e.complexity.PaginationEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.PaginationEdge.Node(childComplexity), true
+
+	case "PaginationInfo.endCursor":
+		if e.complexity.PaginationInfo.EndCursor == nil {
+			break
+		}
+
+		return e.complexity.PaginationInfo.EndCursor(childComplexity), true
+
+	case "PaginationInfo.hasNextPage":
+		if e.complexity.PaginationInfo.HasNextPage == nil {
+			break
+		}
+
+		return e.complexity.PaginationInfo.HasNextPage(childComplexity), true
+
+	case "PaginationResultCoupon.edges":
+		if e.complexity.PaginationResultCoupon.Edges == nil {
+			break
+		}
+
+		return e.complexity.PaginationResultCoupon.Edges(childComplexity), true
+
+	case "PaginationResultCoupon.pageInfo":
+		if e.complexity.PaginationResultCoupon.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.PaginationResultCoupon.PageInfo(childComplexity), true
+
+	case "PaginationResultCoupon.totalCount":
+		if e.complexity.PaginationResultCoupon.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.PaginationResultCoupon.TotalCount(childComplexity), true
+
+	case "Query.getPaginationCoupons":
+		if e.complexity.Query.GetPaginationCoupons == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getPaginationCoupons_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.MyCoupons(childComplexity, args["title"].(string), args["memberType"].(string)), true
+		return e.complexity.Query.GetPaginationCoupons(childComplexity, args["input"].(model.Pagination)), true
+
+	case "Query.myCoupons":
+		if e.complexity.Query.MyCoupons == nil {
+			break
+		}
+
+		args, err := ec.field_Query_myCoupons_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MyCoupons(childComplexity, args["title"].(string), args["userId"].(string)), true
 
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
@@ -383,6 +462,31 @@ var sources = []*ast.Source{
 
 scalar Time
 
+# Pagination
+input Pagination {
+	first : Int!
+	offset : Int!
+	after : String
+	query : String!
+	sort : [String!]!
+}
+
+type PaginationEdge {
+	node : Coupon!
+	cursor : String!
+}
+
+type PaginationInfo {
+	endCursor : String!
+	hasNextPage : Boolean!
+}
+
+type PaginationResultCoupon {
+	totalCount: Int!
+	edges : [PaginationEdge!]!
+	pageInfo : PaginationInfo!
+}
+
 type User {
   id: ID!
   name: String!
@@ -410,7 +514,8 @@ type Coupon {
 }
 
 type Query {
-  MyCoupons(title: String!, memberType: String!): [Coupon!]!
+  myCoupons(title: String!, userId: ID!): [Coupon!]!
+  getPaginationCoupons(input: Pagination!): PaginationResultCoupon!
 }
 
 input NewCoupon {
@@ -520,30 +625,6 @@ func (ec *executionContext) field_Mutation_updateCoupon_args(ctx context.Context
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_MyCoupons_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["title"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["title"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["memberType"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("memberType"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["memberType"] = arg1
-	return args, nil
-}
-
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -556,6 +637,45 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getPaginationCoupons_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.Pagination
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNPagination2githubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPagination(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_myCoupons_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["title"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["title"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg1
 	return args, nil
 }
 
@@ -1287,7 +1407,252 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	return ec.marshalNUser2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋinternalᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_MyCoupons(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _PaginationEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.PaginationEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginationEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Coupon)
+	fc.Result = res
+	return ec.marshalNCoupon2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋinternalᚋmodelsᚐCoupon(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginationEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.PaginationEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginationEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginationInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *model.PaginationInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginationInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginationInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *model.PaginationInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginationInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasNextPage, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginationResultCoupon_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.PaginationResultCoupon) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginationResultCoupon",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginationResultCoupon_edges(ctx context.Context, field graphql.CollectedField, obj *model.PaginationResultCoupon) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginationResultCoupon",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PaginationEdge)
+	fc.Result = res
+	return ec.marshalNPaginationEdge2ᚕᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationEdgeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginationResultCoupon_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.PaginationResultCoupon) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginationResultCoupon",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PaginationInfo)
+	fc.Result = res
+	return ec.marshalNPaginationInfo2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_myCoupons(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1304,7 +1669,7 @@ func (ec *executionContext) _Query_MyCoupons(ctx context.Context, field graphql.
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_MyCoupons_args(ctx, rawArgs)
+	args, err := ec.field_Query_myCoupons_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1312,7 +1677,7 @@ func (ec *executionContext) _Query_MyCoupons(ctx context.Context, field graphql.
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().MyCoupons(rctx, args["title"].(string), args["memberType"].(string))
+		return ec.resolvers.Query().MyCoupons(rctx, args["title"].(string), args["userId"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1327,6 +1692,48 @@ func (ec *executionContext) _Query_MyCoupons(ctx context.Context, field graphql.
 	res := resTmp.([]*models.Coupon)
 	fc.Result = res
 	return ec.marshalNCoupon2ᚕᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋinternalᚋmodelsᚐCouponᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getPaginationCoupons(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getPaginationCoupons_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetPaginationCoupons(rctx, args["input"].(model.Pagination))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PaginationResultCoupon)
+	fc.Result = res
+	return ec.marshalNPaginationResultCoupon2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationResultCoupon(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2844,6 +3251,61 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPagination(ctx context.Context, obj interface{}) (model.Pagination, error) {
+	var it model.Pagination
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "first":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+			it.First, err = ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "offset":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			it.Offset, err = ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "after":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+			it.After, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "query":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			it.Query, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "sort":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+			it.Sort, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3010,6 +3472,107 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var paginationEdgeImplementors = []string{"PaginationEdge"}
+
+func (ec *executionContext) _PaginationEdge(ctx context.Context, sel ast.SelectionSet, obj *model.PaginationEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, paginationEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PaginationEdge")
+		case "node":
+			out.Values[i] = ec._PaginationEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cursor":
+			out.Values[i] = ec._PaginationEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var paginationInfoImplementors = []string{"PaginationInfo"}
+
+func (ec *executionContext) _PaginationInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PaginationInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, paginationInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PaginationInfo")
+		case "endCursor":
+			out.Values[i] = ec._PaginationInfo_endCursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hasNextPage":
+			out.Values[i] = ec._PaginationInfo_hasNextPage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var paginationResultCouponImplementors = []string{"PaginationResultCoupon"}
+
+func (ec *executionContext) _PaginationResultCoupon(ctx context.Context, sel ast.SelectionSet, obj *model.PaginationResultCoupon) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, paginationResultCouponImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PaginationResultCoupon")
+		case "totalCount":
+			out.Values[i] = ec._PaginationResultCoupon_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._PaginationResultCoupon_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._PaginationResultCoupon_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -3025,7 +3588,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "MyCoupons":
+		case "myCoupons":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -3033,7 +3596,21 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_MyCoupons(ctx, field)
+				res = ec._Query_myCoupons(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "getPaginationCoupons":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getPaginationCoupons(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3482,6 +4059,89 @@ func (ec *executionContext) unmarshalNNewCoupon2ᚖgithubᚗcomᚋkelompokᚑ1�
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNPagination2githubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPagination(ctx context.Context, v interface{}) (model.Pagination, error) {
+	res, err := ec.unmarshalInputPagination(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPaginationEdge2ᚕᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PaginationEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPaginationEdge2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPaginationEdge2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationEdge(ctx context.Context, sel ast.SelectionSet, v *model.PaginationEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PaginationEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPaginationInfo2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationInfo(ctx context.Context, sel ast.SelectionSet, v *model.PaginationInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PaginationInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPaginationResultCoupon2githubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationResultCoupon(ctx context.Context, sel ast.SelectionSet, v model.PaginationResultCoupon) graphql.Marshaler {
+	return ec._PaginationResultCoupon(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPaginationResultCoupon2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPaginationResultCoupon(ctx context.Context, sel ast.SelectionSet, v *model.PaginationResultCoupon) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PaginationResultCoupon(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3495,6 +4155,42 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {

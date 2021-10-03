@@ -23,6 +23,7 @@ func main() {
 
 	database.DB.AutoMigrate(&models.User{})
 	database.DB.AutoMigrate(&models.Coupon{})
+	database.DB.AutoMigrate(&models.UserHasCoupon{})
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -21,7 +21,7 @@ func CreateCouponHandler(ctx context.Context, newCoupon model.NewCoupon) (*model
 	parsedBeginDate, _ := time.Parse(layoutISO, newCoupon.BeginDate)
 	parsedExpiredDate, _ := time.Parse(layoutISO, newCoupon.ExpiredDate)
 
-	randomID := fmt.Sprintf("TKP-%d", rand.Intn(100000))
+	randomID := fmt.Sprintf("TKP-%d", rand.Intn(1000))
 
 	coupon := models.Coupon{
 		ID:                   randomID,
@@ -90,6 +90,12 @@ func DeleteCouponHandler(ctx context.Context, id string) (bool, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func MyCouponsHandler(ctx context.Context, title string, memberType string) ([]*models.Coupon, error) {
-	panic(fmt.Errorf("not implemented"))
+func MyCouponsHandler(ctx context.Context, title string, userID string) ([]*models.Coupon, error) {
+	res := database.DB.
+		Model(&models.UserHasCoupon{}).
+		Joins("coupons ON user_has_coupons.coupon_id = coupons.id").
+		Where("user_id = ? AND title = ?", userID, title)
+
+	fmt.Println(res)
+	return nil, nil
 }

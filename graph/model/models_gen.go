@@ -2,6 +2,10 @@
 
 package model
 
+import (
+	"github.com/kelompok-1-tgtc/tgtc-user-coupon/internal/models"
+)
+
 type NewCoupon struct {
 	Title                string `json:"title"`
 	CouponType           string `json:"couponType"`
@@ -21,4 +25,28 @@ type NewUser struct {
 	Name       string       `json:"name"`
 	MemberType string       `json:"memberType"`
 	Coupons    []*NewCoupon `json:"coupons"`
+}
+
+type Pagination struct {
+	First  int64    `json:"first"`
+	Offset int64    `json:"offset"`
+	After  *string  `json:"after"`
+	Query  string   `json:"query"`
+	Sort   []string `json:"sort"`
+}
+
+type PaginationEdge struct {
+	Node   *models.Coupon `json:"node"`
+	Cursor string         `json:"cursor"`
+}
+
+type PaginationInfo struct {
+	EndCursor   string `json:"endCursor"`
+	HasNextPage bool   `json:"hasNextPage"`
+}
+
+type PaginationResultCoupon struct {
+	TotalCount int64             `json:"totalCount"`
+	Edges      []*PaginationEdge `json:"edges"`
+	PageInfo   *PaginationInfo   `json:"pageInfo"`
 }

@@ -4,6 +4,31 @@
 
 scalar Time
 
+# Pagination
+input Pagination {
+	first : Int!
+	offset : Int!
+	after : String
+	query : String!
+	sort : [String!]!
+}
+
+type PaginationEdge {
+	node : Coupon!
+	cursor : String!
+}
+
+type PaginationInfo {
+	endCursor : String!
+	hasNextPage : Boolean!
+}
+
+type PaginationResultCoupon {
+	totalCount: Int!
+	edges : [PaginationEdge!]!
+	pageInfo : PaginationInfo!
+}
+
 type User {
   id: ID!
   name: String!
@@ -31,7 +56,8 @@ type Coupon {
 }
 
 type Query {
-  MyCoupons(title: String!, memberType: String!): [Coupon!]!
+  myCoupons(title: String!, userId: ID!): [Coupon!]!
+  getPaginationCoupons(input: Pagination!): PaginationResultCoupon!
 }
 
 input NewCoupon {
