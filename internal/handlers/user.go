@@ -44,7 +44,6 @@ func CreateUserHandler(ctx context.Context, newUser *model.NewUser) (*models.Use
 		ID:         id,
 		Name:       newUser.Name,
 		MemberType: newUser.MemberType,
-		Coupons:    userCoupon,
 		CreatedAt:  time.Now(),
 	}
 

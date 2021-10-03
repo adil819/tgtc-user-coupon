@@ -91,11 +91,18 @@ func DeleteCouponHandler(ctx context.Context, id string) (bool, error) {
 }
 
 func MyCouponsHandler(ctx context.Context, title string, userID string) ([]*models.Coupon, error) {
-	res := database.DB.
-		Model(&models.UserHasCoupon{}).
-		Joins("coupons ON user_has_coupons.coupon_id = coupons.id").
-		Where("user_id = ? AND title = ?", userID, title)
+	var user models.User
+	database.DB.Where("id = ?", userID).First(&user)
+	userMemberType := user.MemberType
 
-	fmt.Println(res)
-	return nil, nil
+	var coupons []models.Coupon
+	database.DB.Where("member_type = ?", userMemberType).Find(&coupons)
+
+	var res []*models.Coupon
+
+	for _, v := range coupons {
+		res = append(res, &v)
+	}
+
+	return res, nil
 }
