@@ -22,9 +22,8 @@ type NewCoupon struct {
 }
 
 type NewUser struct {
-	Name       string       `json:"name"`
-	MemberType string       `json:"memberType"`
-	Coupons    []*NewCoupon `json:"coupons"`
+	Name       string `json:"name"`
+	MemberType string `json:"memberType"`
 }
 
 type Pagination struct {

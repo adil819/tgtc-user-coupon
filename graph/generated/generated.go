@@ -536,7 +536,6 @@ input NewCoupon {
 input NewUser {
   name: String!
   memberType: String!
-  coupons: [NewCoupon!]!
 }
 
 type Mutation {
@@ -3237,14 +3236,6 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 			if err != nil {
 				return it, err
 			}
-		case "coupons":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("coupons"))
-			it.Coupons, err = ec.unmarshalNNewCoupon2ᚕᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐNewCouponᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		}
 	}
 
@@ -4031,32 +4022,6 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 func (ec *executionContext) unmarshalNNewCoupon2githubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐNewCoupon(ctx context.Context, v interface{}) (model.NewCoupon, error) {
 	res, err := ec.unmarshalInputNewCoupon(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNNewCoupon2ᚕᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐNewCouponᚄ(ctx context.Context, v interface{}) ([]*model.NewCoupon, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*model.NewCoupon, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNNewCoupon2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐNewCoupon(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalNNewCoupon2ᚖgithubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐNewCoupon(ctx context.Context, v interface{}) (*model.NewCoupon, error) {
-	res, err := ec.unmarshalInputNewCoupon(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNPagination2githubᚗcomᚋkelompokᚑ1ᚑtgtcᚋtgtcᚑuserᚑcouponᚋgraphᚋmodelᚐPagination(ctx context.Context, v interface{}) (model.Pagination, error) {

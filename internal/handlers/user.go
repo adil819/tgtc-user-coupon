@@ -12,32 +12,6 @@ import (
 )
 
 func CreateUserHandler(ctx context.Context, newUser *model.NewUser) (*models.User, error) {
-	var userCoupon []models.Coupon
-
-	for _, v := range newUser.Coupons {
-		id := fmt.Sprintf("TKP-%d", rand.Intn(1000))
-
-		parsedBeginDate, _ := time.Parse(layoutISO, v.BeginDate)
-		parsedExpiredDate, _ := time.Parse(layoutISO, v.ExpiredDate)
-
-		tempCoupon := models.Coupon{
-			ID:                   id,
-			Title:                v.Title,
-			CouponType:           v.CouponType,
-			BeginDate:            parsedBeginDate,
-			ExpiredDate:          parsedExpiredDate,
-			Category:             v.Category,
-			Discount:             v.Discount,
-			MaxDiscountAmount:    v.MaxDiscountAmount,
-			MinTransactionAmount: v.MinTransactionAmount,
-			PaymentMethod:        v.PaymentMethod,
-			MemberType:           v.MemberType,
-			ImageURL:             v.ImageURL,
-			Description:          v.Description,
-		}
-		userCoupon = append(userCoupon, tempCoupon)
-	}
-
 	id := fmt.Sprintf("USR-%d", rand.Intn(1000))
 
 	user := models.User{
